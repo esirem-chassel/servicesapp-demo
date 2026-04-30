@@ -1,0 +1,34 @@
+{% extends 'base.html.twig' %}
+{% block body %}
+<section>
+    <header>
+        <h2>Rechercher par promotion</h2>
+        <form method="post">
+            <p>
+                <select name="year" required="required"></select>
+                <select name="section" required="required"></select>
+                <select name="semester"></select>
+            </p>
+        </form>
+    </header>
+    <main></main>
+</section>
+<template id="stpl">
+    <article>
+        <header>
+            <h3><a href="#"></a></h3>
+        </header>
+        <main>
+            <p class="speakers">
+                <slot></slot> intervenants
+            </p>
+            <p class="modules">
+                <slot></slot>/<slot></slot> modules couverts
+            </p>
+            <p class="hours">
+                <slot></slot>/<slot></slot> heures
+            </p>
+        </main>
+    </article>
+</template>
+{% endblock %}
