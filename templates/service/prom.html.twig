@@ -1,4 +1,20 @@
 {% extends 'base.html.twig' %}
 {% block body %}
-
+    <header>
+        <h2>{{ name }}</h2>
+        <aside>
+            <p>
+                <slot class="nbspeakers">{{ nb.speakers }}</slot> intervenants
+            </p>
+            <p>
+                <slot class="nbmodules">{{ nb.mods }}</slot>/<slot class="mxmodules">{{ nb.totmods }}</slot> modules couverts
+            </p>
+            <p>
+                <slot class="nbhours">{{ nb.hours }}</slot>/<slot class="mxhours">{{ nb.tothours }}</slot> heures
+            </p>
+        </aside>
+    </header>
+    <main>
+        
+    </main>
 {% endblock %}

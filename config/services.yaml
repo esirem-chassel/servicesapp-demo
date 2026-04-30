@@ -24,4 +24,4 @@ services:
     # please note that last definitions always *replace* previous ones
     App\Service\SQL:
         arguments:
-            - "%app_sql_dsn"
+            - "%app_sql_dsn%"

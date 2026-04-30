@@ -54,3 +54,39 @@ create table "modulestpl" (
 "coeff" decimal not null,
 "manager" integer default null
 );
+
+create table "repartstpl" (
+"module" integer not null,
+"mode" varchar(5) not null,
+"nb" double not null default 0,
+primary key("module", "mode")
+);
+
+create table "ues" (
+"ue" integer not null primary key,
+"name" varchar(200) not null,
+"ects" integer not null default 0
+);
+
+create table "modulestpl" (
+"module" integer not null primary key,
+"name" varchar(200) not null,
+"code" varchar(20) default null,
+"coeff" decimal not null,
+"manager" integer default null
+);
+
+create table "reparts" (
+"module" integer not null,
+"mode" varchar(5) not null,
+"nb" double not null default 0,
+primary key("module", "mode")
+);
+
+create table "speaks" (
+"module" integer not null,
+"mode" varchar(5) not null,
+"speaker" int default null,
+"nb" double not null default 0,
+primary key("module", "mode", "speaker")
+);

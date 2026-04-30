@@ -17,7 +17,7 @@ class SQL {
             $this->connect($dsn);
         } catch(\Exception $e) {
             // erase DSN from trace
-            throw new \App\Exception\SQLInvalidConfigException('Invalid config, check SQL_DSN', 0, null);
+            throw new \App\Exception\SQLInvalidConfigException('Invalid config, check SQL_DSN', 0, $e);
         }
     }
     

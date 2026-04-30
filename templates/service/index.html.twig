@@ -3,30 +3,62 @@
 <section>
     <header>
         <h2>Rechercher par promotion</h2>
-        <form method="post">
+        <form method="post" id="formSearchProm">
             <p>
-                <select name="year" required="required"></select>
-                <select name="section" required="required"></select>
-                <select name="semester"></select>
+                <select name="year" required="required"><option>- Année -</option></select>
+                <select name="section" required="required"><option>- Section -</option></select>
+                <select name="semester"><option>- Semestre -</option></select>
+                <input type="submit" name="searchProm" value="Rechercher" />
             </p>
         </form>
     </header>
     <main></main>
 </section>
-<template id="stpl">
+<section>
+    <header>
+        <h2>Rechercher par intervenant</h2>
+        <form method="post" id="formSearchSpeaker">
+            <p>
+                <select name="year" required="required"><option>- Année -</option></select>
+                <input type="search" name="name" placeholder="nom et/ou prénom" />
+                <input type="submit" name="searchSpeaker" value="Rechercher" />
+            </p>
+        </form>
+    </header>
+    <main></main>
+</section>
+<template id="promtpl">
     <article>
         <header>
             <h3><a href="#"></a></h3>
         </header>
         <main>
-            <p class="speakers">
-                <slot></slot> intervenants
+            <p>
+                <slot class="nbspeakers"></slot> intervenants
             </p>
-            <p class="modules">
-                <slot></slot>/<slot></slot> modules couverts
+            <p>
+                <slot class="nbmodules"></slot>/<slot class="mxmodules"></slot> modules couverts
             </p>
-            <p class="hours">
-                <slot></slot>/<slot></slot> heures
+            <p>
+                <slot class="nbhours"></slot>/<slot class="mxhours"></slot> heures
+            </p>
+        </main>
+    </article>
+</template>
+<template id="speakertpl">
+    <article>
+        <header>
+            <h3><a href="#"></a></h3>
+        </header>
+        <main>
+            <p>
+                <slot class="nbproms"></slot> promotions
+            </p>
+            <p>
+                <slot class="nbmodules"></slot> modules couverts
+            </p>
+            <p>
+                <slot class="nbhours"></slot> heures
             </p>
         </main>
     </article>
