@@ -17,7 +17,7 @@ function loadYears() {
             py.innerHTML = '<option>- Année -</option>';
             for(let c of res) {
                 const o = document.createElement('option');
-                o.setAttribute('value', c.rowid);
+                o.setAttribute('value', c.id);
                 o.innerText = c.name;
                 const po = o.cloneNode(true);
                 sy.insertAdjacentElement('beforeend', o);
@@ -29,18 +29,20 @@ function loadYears() {
 }
 
 function loadSections() {
-    let y = document.querySelector('#formSearchProm select[name="year"]').value;
-    if(!y || isNaN(y)) { y = 0; }
-    console.log(document.querySelector('#formSearchProm select[name="year"]'));
-    fetch(`/codex/years/${y}/sections`).then((r) => {
+    fetch(`/codex/sections`).then((r) => {
         r.json().then((res) => {
             const ss = document.querySelector('#formSearchProm select[name="section"]');
             ss.innerHTML = '<option>- Section -</option>';
             for(let c of res) {
-                const o = document.createElement('option');
-                o.setAttribute('value', c.rowid);
-                o.innerText = c.name;
-                ss.insertAdjacentElement('beforeend', o);
+                const g = document.createElement('optgroup');
+                g.label = c.name;
+                for(let t of c.trainings) {
+                    const o = document.createElement('option');
+                    o.setAttribute('value', t.id);
+                    o.innerText = t.name;
+                    g.insertAdjacentElement('beforeend', o);
+                }
+                ss.insertAdjacentElement('beforeend', g);
             }
             loadSemesters();
         });
@@ -48,19 +50,22 @@ function loadSections() {
 }
 
 function loadSemesters() {
-    let y = document.querySelector('#formSearchProm select[name="year"]').value;
-    if(!y || isNaN(y)) { y = 0; }
     let s = document.querySelector('#formSearchProm select[name="section"]').value;
     if(!s || isNaN(s)) { s = 0; }
-    fetch(`/codex/years/${y}/sections/${s}/semesters`).then((r) => {
+    fetch(`/codex/semesters/${s}`).then((r) => {
         r.json().then((res) => {
             const ss = document.querySelector('#formSearchProm select[name="semester"]');
             ss.innerHTML = '<option>- Semestre -</option>';
             for(let c of res) {
-                const o = document.createElement('option');
-                o.setAttribute('value', c.rowid);
-                o.innerText = c.name;
-                ss.insertAdjacentElement('beforeend', o);
+                const g = document.createElement('optgroup');
+                g.label = c.name;
+                for(let s of c.semesters) {
+                    const o = document.createElement('option');
+                    o.setAttribute('value', s.id);
+                    o.innerText = s.name;
+                    g.insertAdjacentElement('beforeend', o);
+                }
+                ss.insertAdjacentElement('beforeend', g);
             }
             searchProms();
         });
@@ -68,19 +73,10 @@ function loadSemesters() {
 }
 
 function searchProms() {
-    fetch(`/codex/years/${y}/sections/${s}/semesters`).then((r) => {
-        r.json().then((res) => {
-            const ss = document.querySelector('#formSearchProm select[name="semester"]');
-            ss.innerHTML = '<option>- Semestre -</option>';
-            for(let c of res) {
-                const o = document.createElement('option');
-                o.setAttribute('value', c.rowid);
-                o.innerText = c.name;
-                ss.insertAdjacentElement('beforeend', o);
-            }
-            //ss.trigger('change');
-        });
-    });
+    const y = document.querySelector('#formSearchProm select[name="year"]').value;
+    const t = document.querySelector('#formSearchProm select[name="section"]').value;
+    const s = document.querySelector('#formSearchProm select[name="semester"]').value;
+    console.log(`Year={y}, Section={t}, Semestre={s}`);
 }
 
 document.addEventListener('DOMContentLoaded', () => {

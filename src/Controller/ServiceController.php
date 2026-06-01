@@ -7,7 +7,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
-#[Route('/service')]
+#[Route('/')]
 class ServiceController extends AbstractController {
     protected SQL $sql;
     public function __construct(SQL $sql) {
@@ -17,6 +17,16 @@ class ServiceController extends AbstractController {
     #[Route('/')]
     public function index(): Response {
         return $this->render('service/index.html.twig');
+    }
+    
+    #[Route('/overview/{module}')]
+    public function overview(int $module): Response {
+        return $this->render('service/overview.html.twig');
+    }
+    
+    #[Route('/reparts/{module}')]
+    public function editModel(int $module): Response {
+        return $this->render('service/reparts.html.twig');
     }
     
     #[Route('/prom/{prom}')]
@@ -38,21 +48,6 @@ class ServiceController extends AbstractController {
     #[Route('/speaker/{speaker}')]
     public function speaker(int $speaker): Response {
         return $this->render('service/speaker.html.twig');
-    }
-    
-    protected static function mockProms() {
-        return [
-            // y1
-            1 => [
-                // Cyber
-                1 => [
-                    // s5
-                    5 => [
-                        
-                    ],
-                ],
-            ],
-        ];
     }
     
     #[Route('/search/{year}/{section}/{semester}')]

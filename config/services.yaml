@@ -8,6 +8,8 @@
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
     app_sql_dsn: '%env(SQL_DSN)%'
+    app_sql_usr: '%env(SQL_USR)%'
+    app_sql_pwd: '%env(SQL_PWD)%'
 
 services:
     # default configuration for services in *this* file
@@ -25,3 +27,5 @@ services:
     App\Service\SQL:
         arguments:
             - "%app_sql_dsn%"
+            - "%app_sql_usr%"
+            - "%app_sql_pwd%"

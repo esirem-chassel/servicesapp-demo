@@ -14,116 +14,53 @@ use Symfony\Component\Routing\Attribute\Route;
  */
 #[Route('/codex')]
 class MockController extends AbstractController {
-    protected static function getYears() {
-        return [
-            ['rowid' => 1, 'name' => '2025/2026',],
-            ['rowid' => 2, 'name' => '2026/2027',],
-        ];
-    }
-    
-    protected static function getSections() {
-        return [
-            ['rowid' => 1, 'name' => 'Cyber',],
-            ['rowid' => 2, 'name' => 'IoT',],
-            ['rowid' => 3, 'name' => 'CND',],
-            ['rowid' => 4, 'name' => 'GEIPI',],
-        ];
-    }
-    
-    protected static function getSemesters() {
-        return [
-            ['rowid' => 1, 'name' => 'S1',],
-            ['rowid' => 2, 'name' => 'S2',],
-            ['rowid' => 3, 'name' => 'S3',],
-            ['rowid' => 4, 'name' => 'S4',],
-            ['rowid' => 5, 'name' => 'S5',],
-            ['rowid' => 6, 'name' => 'S6',],
-            ['rowid' => 7, 'name' => 'S7',],
-            ['rowid' => 8, 'name' => 'S8',],
-            ['rowid' => 9, 'name' => 'S9',],
-            ['rowid' => 10, 'name' => 'S10',],
-        ];
-    }
-    
-    protected static function getSBY() {
-        return [
-            1 => [1, 2, 3, 4,],
-            2 => [1, 2, 3, 4,],
-        ];
-    }
-    
-    protected static function getSBS() {
-        return [
-            1 => [5, 6, 7, 8, 9, 10,],
-            2 => [5, 6, 7, 8, 9, 10,],
-            3 => [5, 6, 7, 8, 9, 10,],
-            4 => [1, 2, 3, 4,],
-        ];
-    }
-    
-    protected static function findSectionByYear($y) {
-        $sby = static::getSBY();
-        $returns = [];
-        $selected = $sby[$y]??[];
-        $sections = static::getSections();
-        foreach($sections as $sect) {
-            if(in_array($sect['rowid'], $selected)) {
-                $returns[] = $sect;
-            }
-        }
-        return $returns;
-    }
-    
-    protected static function findSemestersBySection($s) {
-        $sbs = static::getSBS();
-        $returns = [];
-        $selected = $sbs[$s]??[];
-        $semesters = static::getSemesters();
-        foreach($semesters as $sem) {
-            if(in_array($sem['rowid'], $selected)) {
-                $returns[] = $sem;
-            }
-        }
-        return $returns;
+    protected \App\Service\SQL $sql;
+    protected \Psr\Log\LoggerInterface $logger;
+    public function __construct(\App\Service\SQL $sql, \Psr\Log\LoggerInterface $logger) {
+        $this->sql = $sql;
+        $this->logger = $logger;
     }
     
     #[Route('/years')]
     public function years(): JsonResponse {
-        return $this->json(static::getYears());
+        return $this->json($this->sql->fq('select `id`, `name` from `sessions` order by `name`'));
     }
     
-    #[Route('/years/{y}/sections')]
+    #[Route('/sections')]
     public function sections(int $y = 0): JsonResponse {
-        return $this->json(($y > 0)? static::findSectionByYear($y):static::getSections());
+        $returns = $this->sql->kq('select `id`, `name` from `departments` order by `name`', 'id');
+        foreach($returns as $k => $r) { $r[$k]['trainings'] = []; }
+        $ts = $this->sql->fq('select `id`, `name`, `department_id` from `trainings` order by `name`');
+        foreach($ts as $t) {
+            $tid = $t['department_id'];
+            if(array_key_exists($tid, $returns)) {
+                $returns[$tid]['trainings'][] = $t;
+            }
+        }
+        return $this->json(array_values($returns));
     }
     
-    #[Route('/years/{y}/sections/{s}/semesters')]
-    public function semesters(int $y = 0, int $s = 0): JsonResponse {
-        $returns = [];
-        if($y > 0) {
-            if($s > 0) {
-                $sby = static::getSBY();
-                if(!empty($sby[$y]) && in_array($s, $sby[$y])) {
-                    $returns = static::findSemestersBySection($s);
-                }
-            } else {
-                $sections = static::findSectionByYear($y);
-                $r = [];
-                foreach($sections as $section) {
-                    $sem = static::findSemestersBySection($section['rowid']);
-                    foreach($sem as $sm) {
-                        if(!in_array($sm['rowid'], $r)) {
-                            $returns[] = $sm;
-                            $r[] = $sm['rowid'];
-                        }
-                    }
-                }
-            }
-        } elseif($s > 0) {
-            $returns = static::findSemestersBySection($s);
-        } else {
-            $returns = static::getSemesters();
+    #[Route('/semesters/{section}')]
+    public function semesters(?int $section = null): JsonResponse {
+        $q = 'select y.`id`, y.`name` from `years` y';
+        $qa = [];
+        if(!empty($section)) {
+            $q .= ' right join `semesters` s on s.`year_id`=y.`id`';
+            $q .= ' left join `teaching_units` t on t.`semester_id`=s.`id`';
+            $q .= ' where t.`training_id`=:s';
+            $qa['s'] = $section;
         }
-        return $this->json($returns);
+        $q .= ' order by y.`name`';
+        $this->logger->debug($q);
+        $returns = $this->sql->kq($q, 'id', $qa);
+        foreach($returns as $k => $r) { $r[$k]['semesters'] = []; }
+        $ys = $this->sql->fq('select `id`, `name`, `year_id` from `semesters` order by length(`name`), `name`');
+        foreach($ys as $y) {
+            $yid = $y['year_id'];
+            if(array_key_exists($yid, $returns)) {
+                $returns[$yid]['semesters'][] = $y;
+            }
+        }
+        return $this->json(array_values($returns));
     }
 }
