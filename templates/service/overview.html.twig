@@ -1,9 +1,6 @@
 {% extends 'base.html.twig' %}
 {% block body %}
-    <main id="overviewPage"
-          data-training="{{ trainingId }}"
-          data-session="{{ sessionId }}"
-          data-semester="{{ semesterId }}">
+    <main id="overviewPage">
         <h2>{{ details.semesterName }} - {{ details.name }}</h2>
         <fieldset>
             <legend>
@@ -12,41 +9,35 @@
             <table>
                 <thead>
                     <tr>
-                        <th>UE</th>
-                        <th>Module</th>
-                        <th>Type</th>
+                        <th rowspan="2">UE</th>
+                        <th rowspan="2">Module</th>
+                        {% for mode in modes %}
+                        <th colspan="3">{{ mode.name }}</th>
+                        {% endfor %}
+                        <th rowspan="2">EqTD</th>
+                    </tr>
+                    <tr>
+                        {% for mode in modes %}
                         <th>Séances</th>
                         <th>Nb.Groupes</th>
                         <th>Heures/Groupes</th>
+                        {% endfor %}
                         <th>EqTD</th>
-                        <th>&nbsp;</th>
-                    </tr>
-                    <tr>
-                        <th colspan="8">
-                            <a href="#" class="lineAdder">Ajouter une ligne</a>
-                        </th>
                     </tr>
                 </thead>
                 <tfoot>
                     <tr>
-                        <th colspan="8">
-                            <a href="#" class="lineAdder">Ajouter une ligne</a>
-                        </th>
-                    </tr>
-                    <tr>
-                        <th colspan="8" id="repartsStatus">&nbsp;</th>
+                        <th colspan="6" id="repartsStatus">&nbsp;</th>
                     </tr>
                     <tr>
                         <th colspan="2">UEs : <span id="ue_nb"></span>/<span id="ue_mx"></span></th>
                         <th colspan="2">Modules : <span id="mod_nb"></span>/<span id="mod_mx"></span></th>
                         <th colspan="2">EqTD Total : <span id="eqtd_nb"></span>/<span id="eqtd_mx"></span></th>
-                        <th colspan="2">&nbsp;</th>
                     </tr>
                 </tfoot>
                 <tbody id="reparts">
-                    <th colspan="8">
-                        Chargement en cours...
-                    </th>
+                    {% for r in reparts %}
+                    {% endfor %}
                 </tbody>
             </table>
         </fieldset>

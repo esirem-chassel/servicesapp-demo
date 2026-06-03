@@ -43,6 +43,12 @@ class ServiceController extends AbstractController {
                 . ' left join `teaching_units` u on u.`id`=t.`teaching_unit_id` '
                 . ' left join `session_teaching_units` stu on stu.`teaching_unit_id`=u.`id` '
                 . ' where u.`training_id`=:t and u.`semester_id`=:s and stu.`session_id`=:i', 'id', $qa);
+        $stmt = $this->sql->q('select * '
+                . ' from `default_reparts` '
+                . ' where `teaching_module_id` in('.implode(', ', array_map('intval', array_keys($modules))).')');
+        while($stmt->fetch(\PDO::FETCH_ASSOC)) {
+            
+        }
         $modulesPerUnit = [];
         foreach($modules as $m) {
             if(!array_key_exists($m['unitId'], $modulesPerUnit)) {
@@ -53,17 +59,11 @@ class ServiceController extends AbstractController {
             }
             $modulesPerUnit[$m['unitId']]['modules'][$m['id']] = $m;
         }
-        $reparts = $this->sql->fq('select v.*
-from `v_reparts_fillings` v
-left join `teaching_modules` t on t.`id`=v.`teaching_module_id`
-left join `teaching_units` u on u.`id`=t.`teaching_unit_id`
-where u.`training_id`=:t and u.`semester_id`=:s and v.`session_id`=:i', $qa);
         return $this->render('service/overview.html.twig', [
             'details' => $trainingDetails,
             'trainingId' => $training,
             'sessionId' => $session,
             'semesterId' => $semester,
-            'reparts' => $reparts,
             'modules' => $modules,
             'modulesPerUnit' => $modulesPerUnit,
             'modes' => $allModes,
@@ -128,7 +128,7 @@ where u.`training_id`=:t and u.`semester_id`=:s and v.`session_id`=:i', $qa);
         // @TODO : add, for sharing, the information of who's "carrying" it
         $q = 'select coalesce(r.`mode_id`, dr.`mode_id`) as `mode_id`,'
                 . ' coalesce(r.`nb`, dr.`nb`) as `nb` , '
-                . ' coalesce(r.`timeby`, dr.`timeby`) as timeby`, '
+                . ' coalesce(r.`timeby`, dr.`timeby`) as `timeby`, '
                 . ' coalesce(r.`groups`, dr.`groups`) as `groups`, '
                 . ' coalesce(r.`teaching_module_id`, dr.`teaching_module_id`) as `teaching_module_id`, '
                 . ' r.`session_id`, u.`name` as unitName '

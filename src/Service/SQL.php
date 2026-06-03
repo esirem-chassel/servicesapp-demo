@@ -54,6 +54,44 @@ class SQL {
     }
     
     /**
+     * Execute a query, returning an array using the $iter closure every iteration
+     * @param string $query
+     * @param callable $iter - first argument is the line itself, second is all processed lines
+     * @param array $a
+     * @return \PDOStatement
+     */
+    public function cq(string $query, callable $iter, array $a = []): array {
+        $returns = [];
+        $stmt = $this->getConnection()->prepare($query);
+        $stmt->execute($a);
+        while($l = $stmt->fetch(\PDO::FETCH_ASSOC)) {
+            $returns[] = $iter($l, $returns);
+        }
+        return $returns;
+    }
+    
+    /**
+     * Execute a query, returning an array using the $iter closure every iteration, using $k as a key
+     * @param string $query
+     * @param callable $iter - first argument is the line itself, second is all processed lines
+     * @param string $key
+     * @param array $a
+     * @return \PDOStatement
+     */
+    public function mq(string $query, callable $iter, string $key, array $a = []): array {
+        $returns = [];
+        $stmt = $this->getConnection()->prepare($query);
+        $stmt->execute($a);
+        while($l = $stmt->fetch(\PDO::FETCH_ASSOC)) {
+            $l = $iter($l, $returns);
+            if(array_key_exists($key, $l)) {
+                $returns[$l[$key]] = $l;
+            }
+        }
+        return $returns;
+    }
+    
+    /**
      * Execute the query, returns everything in an array
      * @param string $query
      * @param array $a
