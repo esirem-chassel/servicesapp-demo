@@ -38,7 +38,7 @@ references `users`(`id`) on delete cascade on update cascade
 );
 
 create table `speakmodes` (
-`id` int unsigned primary key,
+`id` int unsigned primary key auto_increment,
 `name` varchar(10) not null unique,
 `eqtd` double not null default 1,
 `created_at` timestamp not null,

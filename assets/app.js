@@ -204,138 +204,63 @@ const SearchServices = {
 
 const OverviewServices = {
     STATUS_TXT: 'fine',
+    STATUS_INF: 'info',
     STATUS_ERR: 'error',
     trainingId: null,
     sessionId: null,
     semesterId: null,
-    data: null, // because of how our keys work, we need to recompute everything every time, and let the back handle it
     init: function() {
         OverviewServices.trainingId = document.querySelector('#overviewPage').dataset.training;
         OverviewServices.sessionId = document.querySelector('#overviewPage').dataset.session;
         OverviewServices.semesterId = document.querySelector('#overviewPage').dataset.semester;
+        OverviewServices.bindEvents();
     },
-    bindAdderEvents: function() {
-        document.querySelectorAll('.lineAdder').forEach((e) => {
-            e.addEventListener('click', OverviewServices.addLine);
+    bindEvents: function() {
+        document.querySelectorAll('.repart-input').forEach((e) => {
+            e.addEventListener('input', OverviewServices.updateField);
         });
     },
-    loadReparts: function() {
-        const training = OverviewServices.trainingId;
-        const session = OverviewServices.sessionId;
-        const semester = OverviewServices.semesterId;
-        fetch(`/reparts/${training}/${session}/${semester}`).then((r) => {
-            r.json().then((res) => {
-                OverviewServices.clearLines();
-                for(l of res) {
-                    OverviewServices.addFilledLine(l);
-                    let k = `${moduleId}_${mode}`;
-                    OverviewServices.data[k] = l; // at this point, no redundancy should happen YET
-                }
-            });
-        });
-    },
-    clearLines: function() {
-        document.getElement('reparts').innerHTML = '';
-        OverviewServices.data = {};
-    },
-    addLine: function() {
-        const tpl = document.importNode(document.querySelector('tpl_repartline').content, true);
-        OverviewServices.bindLineEvents(tpl);
-        document.getElementById('reparts').appendChild(tpl);
-    },
-    bindLineEvents: function(tpl) {
-        tpl.querySelectorAll('select,input').forEach((e) => {
-            e.addEventListener('change', blurFocus);
-        });
-    },
-    addFilledLine: function(lineData) {
-        const tpl = document.importNode(document.querySelector('tpl_repartline').content, true);
-        tpl.querySelector('.repart_line_ue').innerText = lineData.unitName;
-        tpl.querySelector('.repart_line_module select[name="module"]').value = lineData.teaching_module_id;
-        tpl.querySelector('.repart_line_mode select[name="mode"]').value = lineData.mode_id;
-        tpl.querySelector('.repart_line_nb select[name="nb"]').value = lineData.nb;
-        tpl.querySelector('.repart_line_nbgroups select[name="groups"]').value = lineData.groups;
-        tpl.querySelector('.repart_line_hperg select[name="timeby"]').value = lineData.timeby;
-        tpl.querySelector('tr').dataset.specific = (null != lineData.session_id);
-        OverviewServices.bindLineEvents(tpl);
-        document.getElementById('reparts').appendChild(tpl);
-    },
-    dropLine: function(ev) {
-        if(OverviewServices.checkRedundancy()) { // if everything was fine, dropping will be effective now
-            e = ev.target.parent.parent;
-            let module = e.querySelector('.repart_line_module select[name="module"]').value;
-            let mode = e.querySelector('.repart_line_mode select[name="mode"]').value;
-            if(module && mode) {
-                OverviewServices.dropRepart(e, module, mode);
+    updateField: function(ev) {
+        const el = ev.target;
+        console.log(el);
+        const col = el.parentElement;
+        const line = col.parentElement;
+        const obj = {nb: 0, timeby: 0, groups: 0};
+        col.querySelectorAll('input').forEach((e) => {
+            if(obj.hasOwnProperty(e.name)) {
+                obj[e.name] = e.value;
             }
-        } else { // we need to cook
-            OverviewServices.saveAllReparts();
-        }
+        });
+        OverviewServices.saveRepart(line.dataset.module, col.dataset.mode, obj.nb, obj.timeby, obj.groups);
     },
-    blurFocus: function(ev) {
-        const line = ev.target.parent.parent;
-        OverviewServices.checkLine(line);
-    },
-    checkLine: function(el) {
-        let isValid = false;
-        let moduleId = el.querySelector('.repart_line_module select[name="module"]').value;
-        let mode = el.querySelector('.repart_line_mode select[name="mode"]').value;
-        isValid = (moduleId && mode);
-        isValid = isValid && OverviewServices.checkRedundancy();
-        if(isValid) {
-            OverviewServices.saveAllReparts();
-        }
-    },
-    dropRepart: function(line, moduleId, modeId) {
-        const training = OverviewServices.trainingId;
-        const session = OverviewServices.sessionId;
-        const semester = OverviewServices.semesterId;
-        fetch(`/reparts/${training}/${session}/${semester}/drop`, {
-            'method': 'POST',
-            'headers': {
-                'Content-Type': 'application/json',
+    saveRepart: function(moduleId, modeId, nb, timeby, groups) {
+        OverviewServices.updateStatus('Sauvegarde en cours...', OverviewServices.STATUS_INF);
+        const trainingId = OverviewServices.trainingId;
+        const sessionId = OverviewServices.sessionId;
+        fetch(`/reparts/${trainingId}/${sessionId}/${moduleId}/${modeId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
             },
-            'body': JSON.stringify({'teaching': moduleId, 'mode': modeId})
+            body: JSON.stringify({nb: nb, timeby: timeby, groups: groups})
         }).then((r) => {
-            r.json((res) => {
-                if(res.deleted) {
-                    let k = `${moduleId}_${modeId}`;
-                    delete OverviewServices.data[k];
-                    line.outerHTML = '';
-                }
+            r.json().then((res) => {
+                OverviewServices.updateStatus('Sauvegarde effectuée', OverviewServices.STATUS_TXT);
+            }).catch((err) => {
+                console.error(err);
+                OverviewServices.updateStatus('Echec de la sauvegarde', OverviewServices.STATUS_ERR);
             });
+        }).catch((err) => {
+            console.error(err);
+            OverviewServices.updateStatus('Echec de la sauvegarde', OverviewServices.STATUS_ERR);
         });
-    },
-    saveAllReparts: function() {
-        
-    },
-    checkRedundancy: function() {
-        let isRedondant = false;
-        const tot = {};
-        const redondant = {};
-        document.querySelector('#reparts tr').forEach((e) => {
-            let moduleId = e.querySelector('.repart_line_module select[name="module"]').value;
-            let mode = e.querySelector('.repart_line_mode select[name="mode"]').value;
-            let k = `${moduleId}_${mode}`;
-            if(!tot.hasOwnProperty(k)) {
-                tot[k] = 0;
-                e.classList.remove('error');
-            } else {
-                redondant[k] = e;
-                e.classList.add('error');
-                isRedondant = true;
-            }
-            tot[k]++;
-        });
-        if(isRedondant) {
-            OverviewServices.updateStatus('Un ou plusieurs modules sont en doublon', OverviewServices.STATUS_ERR);
-        } else {
-            OverviewServices.updateStatus('Cohérence vérifiée, sauvegarde automatique', OverviewServices.STATUS_TXT);
-        }
-        return isRedondant;
     },
     updateStatus: function(txt, status) {
-        
+        const toRemove = [OverviewServices.STATUS_ERR, OverviewServices.STATUS_INF, OverviewServices.STATUS_TXT];
+        toRemove.splice(toRemove.indexOf(status));
+        document.getElementById('repartsStatus').classList.remove(...toRemove);
+        document.getElementById('repartsStatus').classList.add(status);
+        document.getElementById('repartsStatus').innerText = txt;
     }
 };
 

@@ -1,90 +1,85 @@
 {% extends 'base.html.twig' %}
 {% block body %}
-    <main id="overviewPage">
+    <main id="overviewPage"
+          data-training="{{ trainingId }}"
+          data-session="{{ sessionId }}"
+          data-semester="{{ semesterId }}">
         <h2>{{ details.semesterName }} - {{ details.name }}</h2>
         <fieldset>
             <legend>
                 Maquette
             </legend>
             <table>
+                <colgroup>
+                    <col />
+                    <col />
+                    {% for mode in modes %}
+                        <col span="3" />
+                    {% endfor %}
+                    <col />
+                </colgroup>
                 <thead>
                     <tr>
-                        <th rowspan="2">UE</th>
-                        <th rowspan="2">Module</th>
+                        <th>UE</th>
+                        <th>Module</th>
                         {% for mode in modes %}
-                        <th colspan="3">{{ mode.name }}</th>
-                        {% endfor %}
-                        <th rowspan="2">EqTD</th>
-                    </tr>
-                    <tr>
-                        {% for mode in modes %}
-                        <th>Séances</th>
-                        <th>Nb.Groupes</th>
-                        <th>Heures/Groupes</th>
+                        <th>{{ mode.name }}</th>
                         {% endfor %}
                         <th>EqTD</th>
                     </tr>
                 </thead>
                 <tfoot>
                     <tr>
-                        <th colspan="6" id="repartsStatus">&nbsp;</th>
+                        <th colspan="{{ 3 + (modes|length) }}" id="repartsStatus">&nbsp;</th>
                     </tr>
                     <tr>
                         <th colspan="2">UEs : <span id="ue_nb"></span>/<span id="ue_mx"></span></th>
-                        <th colspan="2">Modules : <span id="mod_nb"></span>/<span id="mod_mx"></span></th>
+                        <th colspan="{{ (modes|length) - 1 }}">Modules : <span id="mod_nb"></span>/<span id="mod_mx"></span></th>
                         <th colspan="2">EqTD Total : <span id="eqtd_nb"></span>/<span id="eqtd_mx"></span></th>
                     </tr>
                 </tfoot>
                 <tbody id="reparts">
-                    {% for r in reparts %}
+                    {% for unit in modulesPerUnit %}
+                        {% for module in unit.modules %}
+                            <tr data-module="{{ module.id }}"
+                                data-ue="{{ unit.id }}">
+                                <th>{{ unit.name }}</th>
+                                <th>{{ module.name }}</th>
+                                {% for mode in modes %}
+                                <td data-mode="{{ mode.id }}">
+                                    Séances :
+                                    <input type="number"
+                                           class="repart-input"
+                                           min="1"
+                                           step="1"
+                                           name="nb"
+                                           value="{{ module.reparts?.(mode.id)?.nb|default(1) }}" />
+                                    <br />
+                                    Min/Séance :
+                                    <input type="number"
+                                           class="repart-input"
+                                           min="15"
+                                           step="15"
+                                           name="timeby"
+                                           value="{{ module.reparts?.(mode.id)?.timeby|default(120) }}" />
+                                    <br />
+                                    Groupes :
+                                    <input type="number"
+                                           class="repart-input"
+                                           min="1"
+                                           step="1"
+                                           name="groups"
+                                           value="{{ module.reparts?.(mode.id)?.groups|default(1) }}" />
+                                    <br />
+                                    Soit <span>{{ module.reparts?.(mode.id)?.eqtd|default(0) }}</span> EQTD
+                                </td>
+                                {% endfor %}
+                                <td>{{ module.eqtd }}</td>
+                            </tr>
+                        {% endfor %}
                     {% endfor %}
                 </tbody>
             </table>
         </fieldset>
     </main>
-    <template id="tpl_repartline">
-        <tr data-specific="0" data-module="" data-mode="">
-            <td class="repart_line_ue">&nbsp;</td>
-            <td class="repart_line_module">
-                <select name="module">
-                    <option value="">- Module -</option>
-                    {% for uid, uv in modulesPerUnit %}
-                        <optgroup label="{{ uv.name }}">
-                            {% for m in uv.modules %}
-                                <option value="{{ m.id }}" data-ueid="{{ uid }}" data-uename="{{ uv.name }}">
-                                    {{ m.name }}
-                                </option>
-                            {% endfor %}
-                        </optgroup>
-                    {% endfor %}
-                </select>
-            </td>
-            <td class="repart_line_mode">
-                <select name="mode">
-                    <option value="">- Modalité -</option>
-                    {% for mod in modes %}
-                        <option value="{{ mod.id }}" data-eqtd="{{ mod.eqtd }}">{{ mod.name }}</option>
-                    {% endfor %}
-                </select>
-            </td>
-            <td class="repart_line_nb">
-                <input type="number" name="nb" min="1" step="1" value="1" />
-                séance(s)
-            </td>
-            <td class="repart_line_nbgroups">
-                <input type="number" name="groups" min="1" step="1" value="1" />
-                groupe(s)
-            </td>
-            <td class="repart_line_hperg">
-                <input type="number" name="timeby" min="15" step="15" value="120" />
-                minutes par groupe
-            </td>
-            <td class="repart_line_eqtd">0</td>
-            <td class="repart_line_actions">
-                <button class="repart_line_action_remove">
-                    🗑️
-                </button>
-            </td>
-        </tr>
-    </template>
 {% endblock %}

@@ -43,21 +43,36 @@ class ServiceController extends AbstractController {
                 . ' left join `teaching_units` u on u.`id`=t.`teaching_unit_id` '
                 . ' left join `session_teaching_units` stu on stu.`teaching_unit_id`=u.`id` '
                 . ' where u.`training_id`=:t and u.`semester_id`=:s and stu.`session_id`=:i', 'id', $qa);
-        $stmt = $this->sql->q('select * '
-                . ' from `default_reparts` '
-                . ' where `teaching_module_id` in('.implode(', ', array_map('intval', array_keys($modules))).')');
-        while($stmt->fetch(\PDO::FETCH_ASSOC)) {
-            
-        }
         $modulesPerUnit = [];
         foreach($modules as $m) {
             if(!array_key_exists($m['unitId'], $modulesPerUnit)) {
                 $modulesPerUnit[$m['unitId']] = [
+                    'id' => $m['unitId'],
                     'name' => $m['unitName'],
+                    'eqtd' => 0,
                     'modules' => [],
                 ];
             }
+            $m['reparts'] = [];
+            $m['eqtd'] = 0;
             $modulesPerUnit[$m['unitId']]['modules'][$m['id']] = $m;
+        }
+        $stmt = $this->sql->q('select dr.`teaching_module_id`, dr.`mode_id`, if(r.`last_modified` is null, "default", "actual") as `type`, '
+                . ' coalesce(r.`nb`, dr.`nb`) as `nb`, '
+                . ' coalesce(r.`timeby`, dr.`timeby`) as `timeby`, '
+                . ' coalesce(r.`groups`, dr.`groups`) as `groups`, '
+                . ' (coalesce(r.`nb`, dr.`nb`) * coalesce(r.`timeby`, dr.`timeby`) * coalesce(r.`groups`, dr.`groups`) * m.`eqtd`) / 60 as `eqtd` '
+                . ' from `default_reparts` dr '
+                . ' left join `reparts` r on r.`teaching_module_id`=dr.`teaching_module_id` and r.`mode_id`=dr.`mode_id` and r.`session_id`=:s '
+                . ' left join `speakmodes` m on m.`id`=dr.`mode_id` '
+                . ' where dr.`teaching_module_id` in('.implode(', ', array_map('intval', array_keys($modules))).')', ['s' => $session,]);
+        while($l = $stmt->fetch(\PDO::FETCH_ASSOC)) {
+            $moduleId = $l['teaching_module_id'];
+            $unitId = $modules[$moduleId]['unitId'];
+            $modeId = $l['mode_id'];
+            $modulesPerUnit[$unitId]['modules'][$moduleId]['reparts'][$modeId] = $l;
+            $modulesPerUnit[$unitId]['modules'][$moduleId]['eqtd'] += $l['eqtd'];
+            $modulesPerUnit[$unitId]['eqtd'] += $l['eqtd'];
         }
         return $this->render('service/overview.html.twig', [
             'details' => $trainingDetails,
@@ -122,7 +137,7 @@ class ServiceController extends AbstractController {
         return $this->json($returns);
     }
     
-    #[Route('/reparts/{training}/{session}/{semester}')]
+    #[Route('/reparts/{training}/{session}/{semester}', methods: ['GET'])]
     public function getReparts(int $training, int $session, int $semester): JsonResponse {
         $returns = [];
         // @TODO : add, for sharing, the information of who's "carrying" it
@@ -145,32 +160,35 @@ class ServiceController extends AbstractController {
         return $this->json($returns);
     }
     
-    #[Route('/reparts/{training}/{session}/{semester}', methods: ['POST'])]
-    public function saveReparts(\Symfony\Component\HttpFoundation\Request $request, int $training, int $session, int $semester): JsonResponse {
-        
-    }
-    
-    #[Route('/reparts/{training}/{session}/{semester}/drop', methods: ['POST'])]
-    public function dropRepart(\Symfony\Component\HttpFoundation\Request $request, int $training, int $session, int $semester): JsonResponse {
-        $returns = ['deleted' => 0,];
-        $teaching = $request->request->getInt('teaching');
-        $mode = $request->request->getInt('mode');
-        if(!empty($teaching) && !empty($mode) && !empty($training) && !empty($session) && !empty($semester)) {
-            $q = 'delete r '
-                    . ' from `reparts` r '
-                    . ' left join `teaching_modules` m on m.`id`=r.`teaching_module_id` '
-                    . ' left join `teaching_units` u on u.`id`=m.`teaching_unit_id` '
-                    . ' where r.`mode_id`=:md '
-                    . ' and r.`teaching_module_id`=:tc '
-                    . ' and r.`session_id`=:si';
+    #[Route('/reparts/{training}/{session}/{module}/{mode}', methods: ['POST'])]
+    public function saveRepart(\Symfony\Component\HttpFoundation\Request $request, int $training, int $session, int $module, int $mode): JsonResponse {
+        $code = JsonResponse::HTTP_OK;
+        $returns = ['errors' => [], 'success' => false,];
+        $data = $request->getPayload();
+        if($data->has('nb') && $data->has('timeby') && $data->has('groups')) {
+            $q = 'insert into `reparts` '
+                    . ' (`session_id`, `teaching_module_id`, `mode_id`, `nb`, `timeby`, `groups`, `last_modified`) '
+                    . ' values(:si, :mi, :md, :nb, :tb, :gr, now()) '
+                    . ' on duplicate key update `nb`=:nb, `timeby`=:tb, `groups`=:gr, `last_modified`=now()';
             $stmt = $this->sql->q($q, [
-                'tc' => $teaching,
-                'md' => $mode,
                 'si' => $session,
+                'mi' => $module,
+                'md' => $mode,
+                'nb' => $data->getInt('nb'),
+                'tb' => $data->getInt('timeby'),
+                'gr' => $data->getInt('groups'),
             ]);
-            $returns['deleted'] = $stmt->rowCount();
+            if($stmt->rowCount()) {
+                $returns['success'] = true;
+            } else {
+                $returns['errors'][] = 'Erreur inconnue à la sauvegarde';
+                $code = JsonResponse::HTTP_INTERNAL_SERVER_ERROR;
+            }
+        } else {
+            $returns['errors'][] = 'Unsufficient parameters';
+            $code = JsonResponse::HTTP_BAD_REQUEST;
         }
-        return $this->json($returns);
+        return $this->json($returns, $code);
     }
 }
 
