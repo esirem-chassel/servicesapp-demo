@@ -1,0 +1,96 @@
+{% extends 'base.html.twig' %}
+{% block body %}
+    <main id="overviewPage"
+          data-training="{{ trainingId }}"
+          data-session="{{ sessionId }}"
+          data-semester="{{ semesterId }}">
+        <h2>{{ details.name }}</h2>
+        <fieldset>
+            <legend>
+                Maquette
+            </legend>
+            <table>
+                <thead>
+                    <tr>
+                        <th>S</th>
+                        <th>UE</th>
+                        <th>Module</th>
+                        <th>Type</th>
+                        <th>Nb.Groupes</th>
+                        <th>Heures/Groupes</th>
+                        <th>EqTD</th>
+                        <th>&nbsp;</th>
+                    </tr>
+                    <tr>
+                        <th colspan="8">
+                            <a href="#" class="lineAdder">Ajouter une ligne</a>
+                        </th>
+                    </tr>
+                </thead>
+                <tfoot>
+                    <tr>
+                        <th colspan="8">
+                            <a href="#" class="lineAdder">Ajouter une ligne</a>
+                        </th>
+                    </tr>
+                    <tr>
+                        <th colspan="8" id="repartsStatus">&nbsp;</th>
+                    </tr>
+                    <tr>
+                        <th colspan="2">UEs : <span id="ue_nb"></span>/<span id="ue_mx"></span></th>
+                        <th colspan="2">Modules : <span id="mod_nb"></span>/<span id="mod_mx"></span></th>
+                        <th colspan="2">EqTD Total : <span id="eqtd_nb"></span>/<span id="eqtd_mx"></span></th>
+                        <th colspan="2">&nbsp;</th>
+                    </tr>
+                </tfoot>
+                <tbody id="reparts">
+                    <th colspan="8">
+                        Chargement en cours...
+                    </th>
+                </tbody>
+            </table>
+        </fieldset>
+    </main>
+    <template id="tpl_repartline">
+        <tr data-default="1">
+            <td>{{ details.semesterName }}</td>
+            <td class="repart_line_ue">&nbsp;</td>
+            <td class="repart_line_module">
+                <select name="module">
+                    <option value="">- Module -</option>
+                    {% for uid, uv in modulesPerUnit %}
+                        <optgroup label="{{ uv.name }}">
+                            {% for m in uv.modules %}
+                                <option value="{{ m.id }}" data-ueid="{{ uid }}" data-uename="{{ uv.name }}">
+                                    {{ m.name }}
+                                </option>
+                            {% endfor %}
+                        </optgroup>
+                    {% endfor %}
+                </select>
+            </td>
+            <td class="repart_line_mode">
+                <select name="mode">
+                    <option value="">- Modalité -</option>
+                    {% for mod in modes %}
+                        <option value="{{ mod.id }}" data-eqtd="{{ mod.eqtd }}">{{ mod.name }}</option>
+                    {% endfor %}
+                </select>
+            </td>
+            <td class="repart_line_nbgroups">
+                <input type="number" min="1" step="1" />
+                groupe(s)
+            </td>
+            <td class="repart_line_hperg">
+                <input type="number" min="15" step="15" />
+                minutes par groupe
+            </td>
+            <td class="repart_line_eqtd">0</td>
+            <td class="repart_line_actions">
+                <button class="repart_line_action_remove">
+                    🗑️
+                </button>
+            </td>
+        </tr>
+    </template>
+{% endblock %}

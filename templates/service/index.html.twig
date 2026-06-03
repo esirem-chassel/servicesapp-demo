@@ -12,7 +12,7 @@
             </p>
         </form>
     </header>
-    <main></main>
+    <main id="resultsProm"></main>
 </section>
 <section>
     <header>
@@ -25,7 +25,7 @@
             </p>
         </form>
     </header>
-    <main></main>
+    <main id="resultsSpeaker"></main>
 </section>
 <template id="promtpl">
     <article>
@@ -34,13 +34,13 @@
         </header>
         <main>
             <p>
-                <slot class="nbspeakers"></slot> intervenants
+                <slot class="nbspeakers">~</slot> intervenants
             </p>
             <p>
-                <slot class="nbmodules"></slot>/<slot class="mxmodules"></slot> modules couverts
+                <slot class="nbmodules">~</slot>/<slot class="mxmodules">?</slot> modules couverts
             </p>
             <p>
-                <slot class="nbhours"></slot>/<slot class="mxhours"></slot> heures
+                <slot class="nbhours">~</slot>/<slot class="mxhours">?</slot> heures
             </p>
         </main>
     </article>

@@ -28,6 +28,7 @@ class SQL {
     protected function connect(string $dsn, ?string $usr, ?string $pwd): SQL {
         $this->connection = new \PDO($dsn, $usr, $pwd, [
             \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+            \PDO::MYSQL_ATTR_INIT_COMMAND => 'SET sql_mode=""',
         ]);
         return $this;
     }
