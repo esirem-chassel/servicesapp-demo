@@ -110,7 +110,7 @@ references `speakmodes`(`id`) on delete restrict on update cascade
 create view `v_reparts_fillings`
 as select r.`session_id`,
 r.`teaching_module_id`,
-coalesce((r.`nb` * r.`timeby` * r.`groups` * sr.`eqtd`), 0) as mxHours,
+coalesce((r.`nb` * (r.`timeby` / 60) * r.`groups` * sr.`eqtd`), 0) as mxHours,
 coalesce((s.`hours` * ss.`eqtd`), 0) as nbHours
 from `reparts` r 
 left join `speaks` s on s.`session_id`=r.`session_id` and s.`teaching_module_id`=r.`teaching_module_id`

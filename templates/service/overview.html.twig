@@ -4,7 +4,7 @@
           data-training="{{ trainingId }}"
           data-session="{{ sessionId }}"
           data-semester="{{ semesterId }}">
-        <h2>{{ details.name }}</h2>
+        <h2>{{ details.semesterName }} - {{ details.name }}</h2>
         <fieldset>
             <legend>
                 Maquette
@@ -12,10 +12,10 @@
             <table>
                 <thead>
                     <tr>
-                        <th>S</th>
                         <th>UE</th>
                         <th>Module</th>
                         <th>Type</th>
+                        <th>Séances</th>
                         <th>Nb.Groupes</th>
                         <th>Heures/Groupes</th>
                         <th>EqTD</th>
@@ -52,8 +52,7 @@
         </fieldset>
     </main>
     <template id="tpl_repartline">
-        <tr data-default="1">
-            <td>{{ details.semesterName }}</td>
+        <tr data-specific="0" data-module="" data-mode="">
             <td class="repart_line_ue">&nbsp;</td>
             <td class="repart_line_module">
                 <select name="module">
@@ -77,12 +76,16 @@
                     {% endfor %}
                 </select>
             </td>
+            <td class="repart_line_nb">
+                <input type="number" name="nb" min="1" step="1" value="1" />
+                séance(s)
+            </td>
             <td class="repart_line_nbgroups">
-                <input type="number" min="1" step="1" />
+                <input type="number" name="groups" min="1" step="1" value="1" />
                 groupe(s)
             </td>
             <td class="repart_line_hperg">
-                <input type="number" min="15" step="15" />
+                <input type="number" name="timeby" min="15" step="15" value="120" />
                 minutes par groupe
             </td>
             <td class="repart_line_eqtd">0</td>

@@ -200,12 +200,15 @@ const SearchServices = {
     }
 };
 
+// @TODO : class Repart
+
 const OverviewServices = {
     STATUS_TXT: 'fine',
     STATUS_ERR: 'error',
     trainingId: null,
     sessionId: null,
     semesterId: null,
+    data: null, // because of how our keys work, we need to recompute everything every time, and let the back handle it
     init: function() {
         OverviewServices.trainingId = document.querySelector('#overviewPage').dataset.training;
         OverviewServices.sessionId = document.querySelector('#overviewPage').dataset.session;
@@ -225,49 +228,111 @@ const OverviewServices = {
                 OverviewServices.clearLines();
                 for(l of res) {
                     OverviewServices.addFilledLine(l);
+                    let k = `${moduleId}_${mode}`;
+                    OverviewServices.data[k] = l; // at this point, no redundancy should happen YET
                 }
             });
         });
     },
     clearLines: function() {
         document.getElement('reparts').innerHTML = '';
+        OverviewServices.data = {};
     },
     addLine: function() {
         const tpl = document.importNode(document.querySelector('tpl_repartline').content, true);
-        // @TODO
+        OverviewServices.bindLineEvents(tpl);
         document.getElementById('reparts').appendChild(tpl);
     },
+    bindLineEvents: function(tpl) {
+        tpl.querySelectorAll('select,input').forEach((e) => {
+            e.addEventListener('change', blurFocus);
+        });
+    },
     addFilledLine: function(lineData) {
+        const tpl = document.importNode(document.querySelector('tpl_repartline').content, true);
+        tpl.querySelector('.repart_line_ue').innerText = lineData.unitName;
+        tpl.querySelector('.repart_line_module select[name="module"]').value = lineData.teaching_module_id;
+        tpl.querySelector('.repart_line_mode select[name="mode"]').value = lineData.mode_id;
+        tpl.querySelector('.repart_line_nb select[name="nb"]').value = lineData.nb;
+        tpl.querySelector('.repart_line_nbgroups select[name="groups"]').value = lineData.groups;
+        tpl.querySelector('.repart_line_hperg select[name="timeby"]').value = lineData.timeby;
+        tpl.querySelector('tr').dataset.specific = (null != lineData.session_id);
+        OverviewServices.bindLineEvents(tpl);
+        document.getElementById('reparts').appendChild(tpl);
+    },
+    dropLine: function(ev) {
+        if(OverviewServices.checkRedundancy()) { // if everything was fine, dropping will be effective now
+            e = ev.target.parent.parent;
+            let module = e.querySelector('.repart_line_module select[name="module"]').value;
+            let mode = e.querySelector('.repart_line_mode select[name="mode"]').value;
+            if(module && mode) {
+                OverviewServices.dropRepart(e, module, mode);
+            }
+        } else { // we need to cook
+            OverviewServices.saveAllReparts();
+        }
+    },
+    blurFocus: function(ev) {
+        const line = ev.target.parent.parent;
+        OverviewServices.checkLine(line);
+    },
+    checkLine: function(el) {
+        let isValid = false;
+        let moduleId = el.querySelector('.repart_line_module select[name="module"]').value;
+        let mode = el.querySelector('.repart_line_mode select[name="mode"]').value;
+        isValid = (moduleId && mode);
+        isValid = isValid && OverviewServices.checkRedundancy();
+        if(isValid) {
+            OverviewServices.saveAllReparts();
+        }
+    },
+    dropRepart: function(line, moduleId, modeId) {
+        const training = OverviewServices.trainingId;
+        const session = OverviewServices.sessionId;
+        const semester = OverviewServices.semesterId;
+        fetch(`/reparts/${training}/${session}/${semester}/drop`, {
+            'method': 'POST',
+            'headers': {
+                'Content-Type': 'application/json',
+            },
+            'body': JSON.stringify({'teaching': moduleId, 'mode': modeId})
+        }).then((r) => {
+            r.json((res) => {
+                if(res.deleted) {
+                    let k = `${moduleId}_${modeId}`;
+                    delete OverviewServices.data[k];
+                    line.outerHTML = '';
+                }
+            });
+        });
+    },
+    saveAllReparts: function() {
         
     },
-    dropLine: function() {
-        
-    },
-    blurFocus: function(e) {
-        const line = e.target.parent.parent;
-        console.log(line); // @TODO pack line and save
-    },
-    saveRepart: function(moduleId, mode, nb, timeby, groups) {
-        
-    },
-    dropRepart: function() {
-        
-    },
-    checkRedondancy: function() {
+    checkRedundancy: function() {
+        let isRedondant = false;
         const tot = {};
         const redondant = {};
         document.querySelector('#reparts tr').forEach((e) => {
             let moduleId = e.querySelector('.repart_line_module select[name="module"]').value;
             let mode = e.querySelector('.repart_line_mode select[name="mode"]').value;
             let k = `${moduleId}_${mode}`;
-            if(!tot.hasOwnProperty(k)) { tot[k] = 0; }
-            else { redondant[k] = {'module': moduleId, 'mode': mode}; }
+            if(!tot.hasOwnProperty(k)) {
+                tot[k] = 0;
+                e.classList.remove('error');
+            } else {
+                redondant[k] = e;
+                e.classList.add('error');
+                isRedondant = true;
+            }
             tot[k]++;
         });
-        OverviewServices.updateStatus('Un ou plusieurs modules sont en doublon', OverviewServices.STATUS_ERR);
-        for(let r of redondant) {
-            
+        if(isRedondant) {
+            OverviewServices.updateStatus('Un ou plusieurs modules sont en doublon', OverviewServices.STATUS_ERR);
+        } else {
+            OverviewServices.updateStatus('Cohérence vérifiée, sauvegarde automatique', OverviewServices.STATUS_TXT);
         }
+        return isRedondant;
     },
     updateStatus: function(txt, status) {
         

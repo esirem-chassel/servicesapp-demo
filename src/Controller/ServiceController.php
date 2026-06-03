@@ -131,7 +131,7 @@ where u.`training_id`=:t and u.`semester_id`=:s and v.`session_id`=:i', $qa);
                 . ' coalesce(r.`timeby`, dr.`timeby`) as timeby`, '
                 . ' coalesce(r.`groups`, dr.`groups`) as `groups`, '
                 . ' coalesce(r.`teaching_module_id`, dr.`teaching_module_id`) as `teaching_module_id`, '
-                . ' r.`session_id` '
+                . ' r.`session_id`, u.`name` as unitName '
                 . ' from `default_reparts` dr '
                 . ' left join `teaching_modules` m on m.`id`=dr.`teaching_module_id` '
                 . ' left join `teaching_units` u on u.`id`=m.`teaching_unit_id` '
@@ -142,6 +142,34 @@ where u.`training_id`=:t and u.`semester_id`=:s and v.`session_id`=:i', $qa);
             'si' => $session,
             'sm' => $semester,
         ]);
+        return $this->json($returns);
+    }
+    
+    #[Route('/reparts/{training}/{session}/{semester}', methods: ['POST'])]
+    public function saveReparts(\Symfony\Component\HttpFoundation\Request $request, int $training, int $session, int $semester): JsonResponse {
+        
+    }
+    
+    #[Route('/reparts/{training}/{session}/{semester}/drop', methods: ['POST'])]
+    public function dropRepart(\Symfony\Component\HttpFoundation\Request $request, int $training, int $session, int $semester): JsonResponse {
+        $returns = ['deleted' => 0,];
+        $teaching = $request->request->getInt('teaching');
+        $mode = $request->request->getInt('mode');
+        if(!empty($teaching) && !empty($mode) && !empty($training) && !empty($session) && !empty($semester)) {
+            $q = 'delete r '
+                    . ' from `reparts` r '
+                    . ' left join `teaching_modules` m on m.`id`=r.`teaching_module_id` '
+                    . ' left join `teaching_units` u on u.`id`=m.`teaching_unit_id` '
+                    . ' where r.`mode_id`=:md '
+                    . ' and r.`teaching_module_id`=:tc '
+                    . ' and r.`session_id`=:si';
+            $stmt = $this->sql->q($q, [
+                'tc' => $teaching,
+                'md' => $mode,
+                'si' => $session,
+            ]);
+            $returns['deleted'] = $stmt->rowCount();
+        }
         return $this->json($returns);
     }
 }
