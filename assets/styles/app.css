@@ -5,3 +5,27 @@ body {
 .error {
     background-color: lightcoral;
 }
+
+.fine {
+    background-color: lightgreen;
+}
+
+.info {
+    background-color: lightskyblue;
+}
+
+#overviewPage table {
+    width: 100%;
+}
+
+#overviewPage tr:nth-of-type(2) {
+    background-color: gray;
+}
+
+#overviewPage tr:nth-of-type(3) {
+    background-color: darkgray;
+}
+
+#overviewPage input {
+    width: 4em;
+}

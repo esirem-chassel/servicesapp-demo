@@ -28,7 +28,7 @@ class ServiceController extends AbstractController {
             's' => $semester,
             'i' => $session,
         ];
-        $allModes = $this->sql->fq("select `id`, `name`, `eqtd` from `speakmodes`");
+        $allModes = $this->sql->fq("select `id`, `name`, `orderix` from `speakmodes` order by `orderix`");
         $trainingDetails = $this->sql->oq('select t.*, '
                 . ' d.`name` as departName, s.`name` as semesterName '
                 . ' from `session_teaching_units` stu '
@@ -49,19 +49,19 @@ class ServiceController extends AbstractController {
                 $modulesPerUnit[$m['unitId']] = [
                     'id' => $m['unitId'],
                     'name' => $m['unitName'],
-                    'eqtd' => 0,
+                    'total' => 0,
                     'modules' => [],
                 ];
             }
             $m['reparts'] = [];
-            $m['eqtd'] = 0;
+            $m['total'] = 0;
             $modulesPerUnit[$m['unitId']]['modules'][$m['id']] = $m;
         }
         $stmt = $this->sql->q('select dr.`teaching_module_id`, dr.`mode_id`, if(r.`last_modified` is null, "default", "actual") as `type`, '
                 . ' coalesce(r.`nb`, dr.`nb`) as `nb`, '
                 . ' coalesce(r.`timeby`, dr.`timeby`) as `timeby`, '
                 . ' coalesce(r.`groups`, dr.`groups`) as `groups`, '
-                . ' (coalesce(r.`nb`, dr.`nb`) * coalesce(r.`timeby`, dr.`timeby`) * coalesce(r.`groups`, dr.`groups`) * m.`eqtd`) / 60 as `eqtd` '
+                . ' (coalesce(r.`nb`, dr.`nb`) * coalesce(r.`timeby`, dr.`timeby`) * coalesce(r.`groups`, dr.`groups`)) / 60 as `total` '
                 . ' from `default_reparts` dr '
                 . ' left join `reparts` r on r.`teaching_module_id`=dr.`teaching_module_id` and r.`mode_id`=dr.`mode_id` and r.`session_id`=:s '
                 . ' left join `speakmodes` m on m.`id`=dr.`mode_id` '
@@ -71,8 +71,8 @@ class ServiceController extends AbstractController {
             $unitId = $modules[$moduleId]['unitId'];
             $modeId = $l['mode_id'];
             $modulesPerUnit[$unitId]['modules'][$moduleId]['reparts'][$modeId] = $l;
-            $modulesPerUnit[$unitId]['modules'][$moduleId]['eqtd'] += $l['eqtd'];
-            $modulesPerUnit[$unitId]['eqtd'] += $l['eqtd'];
+            $modulesPerUnit[$unitId]['modules'][$moduleId]['total'] += $l['total'];
+            $modulesPerUnit[$unitId]['total'] += $l['total'];
         }
         return $this->render('service/overview.html.twig', [
             'details' => $trainingDetails,
@@ -183,6 +183,49 @@ class ServiceController extends AbstractController {
             } else {
                 $returns['errors'][] = 'Erreur inconnue à la sauvegarde';
                 $code = JsonResponse::HTTP_INTERNAL_SERVER_ERROR;
+            }
+        } else {
+            $returns['errors'][] = 'Unsufficient parameters';
+            $code = JsonResponse::HTTP_BAD_REQUEST;
+        }
+        return $this->json($returns, $code);
+    }
+    
+    #[Route('/reparts/{training}/default', methods: ['POST'])]
+    public function saveDefaultRepart(\Symfony\Component\HttpFoundation\Request $request, int $training): JsonResponse {
+        $code = JsonResponse::HTTP_OK;
+        $returns = ['errors' => [], 'success' => false,];
+        $data = $request->getPayload();
+        $nb = 0;
+        if($data->has('modules')) {
+            $modulesToSave = $data->all('modules');
+            foreach($modulesToSave as $moduleId => $moduleContent) {
+                $qi = [];
+                $qu = [];
+                $qa = [];
+                $qa['module'] = $moduleId;
+                $i = 0;
+                foreach($moduleContent['modes'] as $modeId => $modeData) {
+                    $qa['mode_'.$i] = $modeId;
+                    $qa['nb_'.$i] = $modeData['nb'];
+                    $qa['timeby_'.$i] = $modeData['timeby'];
+                    $qa['groups_'.$i] = $modeData['groups'];
+                    $qi[] = '(:module, :mode_'.$i.', :nb_'.$i.', :timeby_'.$i.', :groups_'.$i.')';
+                    $qu[] = '`nb`=:nb_'.$i.', `timeby`=:timeby_'.$i.', `groups`=:groups_'.$i.'';
+                    $i++;
+                }
+                $q = 'insert into `default_reparts` '
+                    . ' (`teaching_module_id`, `mode_id`, `nb`, `timeby`, `groups`) '
+                    . ' values '.implode(', ', $qi)
+                    . ' on duplicate key update `nb`=VALUES(`nb`), `timeby`=VALUES(`timeby`), `groups`=VALUES(`groups`)';
+                $stmt = $this->sql->q($q, $qa);
+                $nb += $stmt->rowCount();
+            }
+            if($nb) {
+                $returns['success'] = true;
+            } else {
+                $returns['errors'][] = 'Aucun enregistrement modifié';
+                $code = JsonResponse::HTTP_NO_CONTENT;
             }
         } else {
             $returns['errors'][] = 'Unsufficient parameters';

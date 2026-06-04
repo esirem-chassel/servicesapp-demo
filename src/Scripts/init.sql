@@ -41,6 +41,7 @@ create table `speakmodes` (
 `id` int unsigned primary key auto_increment,
 `name` varchar(10) not null unique,
 `eqtd` double not null default 1,
+`orderix` int unsigned not null unique,
 `created_at` timestamp not null,
 `updated_at` timestamp not null
 );

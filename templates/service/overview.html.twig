@@ -13,6 +13,7 @@
                 <colgroup>
                     <col />
                     <col />
+                    <col />
                     {% for mode in modes %}
                         <col span="3" />
                     {% endfor %}
@@ -22,59 +23,92 @@
                     <tr>
                         <th>UE</th>
                         <th>Module</th>
+                        <td>&nbsp;</td>
                         {% for mode in modes %}
                         <th>{{ mode.name }}</th>
                         {% endfor %}
-                        <th>EqTD</th>
+                        <th>Total</th>
                     </tr>
                 </thead>
                 <tfoot>
                     <tr>
-                        <th colspan="{{ 3 + (modes|length) }}" id="repartsStatus">&nbsp;</th>
+                        <th colspan="{{ 4 + (modes|length) }}" id="repartsStatus">&nbsp;</th>
                     </tr>
                     <tr>
                         <th colspan="2">UEs : <span id="ue_nb"></span>/<span id="ue_mx"></span></th>
-                        <th colspan="{{ (modes|length) - 1 }}">Modules : <span id="mod_nb"></span>/<span id="mod_mx"></span></th>
-                        <th colspan="2">EqTD Total : <span id="eqtd_nb"></span>/<span id="eqtd_mx"></span></th>
+                        <th colspan="{{ (modes|length) }}">Modules : <span id="mod_nb"></span>/<span id="mod_mx"></span></th>
+                        <th colspan="2">Total : <span id="tot_nb"></span>/<span id="tot_mx"></span></th>
+                    </tr>
+                    <tr>
+                        <th colspan="{{ 4 + (modes|length) }}">
+                            <a href="#" id="applyAsDefault" class="btn btn-danger">
+                                Appliquer en tant que répartition par défaut
+                            </a>
+                        </th>
                     </tr>
                 </tfoot>
-                <tbody id="reparts">
+                <tbody id="reparts" data-nbmodes="{{ modes|length }}">{% set i = 0 %}
                     {% for unit in modulesPerUnit %}
-                        {% for module in unit.modules %}
+                        {% for module in unit.modules %}{% set i = i + 1 %}
                             <tr data-module="{{ module.id }}"
-                                data-ue="{{ unit.id }}">
-                                <th>{{ unit.name }}</th>
-                                <th>{{ module.name }}</th>
+                                data-ue="{{ unit.id }}"
+                                class="mainModuleLine">
+                                <th rowspan="4">{{ unit.name }}</th>
+                                <th rowspan="4">{{ module.name }}</th>
+                                <td>Séances :</td>
                                 {% for mode in modes %}
                                 <td data-mode="{{ mode.id }}">
-                                    Séances :
                                     <input type="number"
                                            class="repart-input"
-                                           min="1"
+                                           tabindex="{{ i * 1000 + mode.id }}"
+                                           min="0"
                                            step="1"
                                            name="nb"
-                                           value="{{ module.reparts?.(mode.id)?.nb|default(1) }}" />
-                                    <br />
-                                    Min/Séance :
-                                    <input type="number"
-                                           class="repart-input"
-                                           min="15"
-                                           step="15"
-                                           name="timeby"
-                                           value="{{ module.reparts?.(mode.id)?.timeby|default(120) }}" />
-                                    <br />
-                                    Groupes :
-                                    <input type="number"
-                                           class="repart-input"
-                                           min="1"
-                                           step="1"
-                                           name="groups"
-                                           value="{{ module.reparts?.(mode.id)?.groups|default(1) }}" />
-                                    <br />
-                                    Soit <span>{{ module.reparts?.(mode.id)?.eqtd|default(0) }}</span> EQTD
+                                           value="{{ module.reparts?.(mode.id)?.nb|default(0) }}" />
                                 </td>
                                 {% endfor %}
-                                <td>{{ module.eqtd }}</td>
+                                <td rowspan="4" class="computedModuleTotal">
+                                    {{ module.total }}
+                                </td>
+                            </tr>
+                            <tr data-module="{{ module.id }}"
+                                data-ue="{{ unit.id }}">
+                                <td>Min/Séance :</td>
+                                {% for mode in modes %}
+                                <td data-mode="{{ mode.id }}">
+                                    <input type="number"
+                                           class="repart-input"
+                                           tabindex="{{ i * 1000 + mode.id }}"
+                                           min="0"
+                                           step="15"
+                                           name="timeby"
+                                           value="{{ module.reparts?.(mode.id)?.timeby|default(0) }}" />
+                                </td>
+                                {% endfor %}
+                            </tr>
+                            <tr data-module="{{ module.id }}"
+                                data-ue="{{ unit.id }}">
+                                <td>Groupes :</td>
+                                {% for mode in modes %}
+                                <td data-mode="{{ mode.id }}">
+                                    <input type="number"
+                                           class="repart-input"
+                                           tabindex="{{ i * 1000 + mode.id }}"
+                                           min="0"
+                                           step="1"
+                                           name="groups"
+                                           value="{{ module.reparts?.(mode.id)?.groups|default(0) }}" />
+                                </td>
+                                {% endfor %}
+                            </tr>
+                            <tr data-module="{{ module.id }}"
+                                data-ue="{{ unit.id }}">
+                                <td>Total :</td>
+                                {% for mode in modes %}
+                                <td data-mode="{{ mode.id }}" class="computedModeTotal">
+                                    {{ module.reparts?.(mode.id)?.total|default(0) }}
+                                </td>
+                                {% endfor %}
                             </tr>
                         {% endfor %}
                     {% endfor %}

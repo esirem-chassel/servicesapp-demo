@@ -7,6 +7,7 @@
 
 // any CSS you import will output into a single css file (app.css in this case)
 import './styles/app.css';
+
 const SearchServices = {
 
     abortSearchYearsController: null,
@@ -218,20 +219,48 @@ const OverviewServices = {
     bindEvents: function() {
         document.querySelectorAll('.repart-input').forEach((e) => {
             e.addEventListener('input', OverviewServices.updateField);
+            e.addEventListener('focus', el => el.target.select());
+        });
+        document.querySelector('#applyAsDefault').addEventListener('click', (e) => {
+            OverviewServices.saveAllAsDefault();
+            e.preventDefault();
+            return false;
         });
     },
     updateField: function(ev) {
         const el = ev.target;
-        console.log(el);
         const col = el.parentElement;
+        const modeId = col.dataset.mode;
         const line = col.parentElement;
+        const moduleId = line.dataset.module;
+        const obj = OverviewServices.computeTotalMode(moduleId, modeId);
+        OverviewServices.saveRepart(moduleId, modeId, obj.nb, obj.timeby, obj.groups);
+        OverviewServices.computeTotalModule(moduleId);
+    },
+    computeTotalMode: function(moduleId, modeId) {
         const obj = {nb: 0, timeby: 0, groups: 0};
-        col.querySelectorAll('input').forEach((e) => {
+        document.querySelectorAll(`tr[data-module="${moduleId}"] td[data-mode="${modeId}"] input.repart-input`).forEach((e) => {
             if(obj.hasOwnProperty(e.name)) {
                 obj[e.name] = e.value;
             }
         });
-        OverviewServices.saveRepart(line.dataset.module, col.dataset.mode, obj.nb, obj.timeby, obj.groups);
+        const totalCell = document.querySelector(`tr[data-module="${moduleId}"] td[data-mode="${modeId}"].computedModeTotal`);
+        totalCell.innerText = (obj.nb * obj.timeby * obj.groups) / 60;
+        return obj;
+    },
+    computeTotalModule: function(moduleId) {
+        let sum = 0;
+        document.querySelectorAll(`tr[data-module="${moduleId}"] td.computedModeTotal`).forEach((e) => {
+            const h = parseFloat(e.innerText);
+            if(!isNaN(h)) {
+                sum += h;
+                e.classList.remove('error');
+            } else {
+                e.classList.add('error');
+            }
+        });
+        const totalCell = document.querySelector(`tr[data-module="${moduleId}"] td.computedModuleTotal`);
+        totalCell.innerText = sum;
     },
     saveRepart: function(moduleId, modeId, nb, timeby, groups) {
         OverviewServices.updateStatus('Sauvegarde en cours...', OverviewServices.STATUS_INF);
@@ -243,6 +272,46 @@ const OverviewServices = {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({nb: nb, timeby: timeby, groups: groups})
+        }).then((r) => {
+            r.json().then((res) => {
+                OverviewServices.updateStatus('Sauvegarde effectuée', OverviewServices.STATUS_TXT);
+            }).catch((err) => {
+                console.error(err);
+                OverviewServices.updateStatus('Echec de la sauvegarde', OverviewServices.STATUS_ERR);
+            });
+        }).catch((err) => {
+            console.error(err);
+            OverviewServices.updateStatus('Echec de la sauvegarde', OverviewServices.STATUS_ERR);
+        });
+    },
+    saveAllAsDefault: function() {
+        const full = {modules: {}};
+        document.querySelectorAll('#reparts tr').forEach((line) => {
+            const moduleId = line.dataset.module;
+            if(!full.modules.hasOwnProperty(moduleId)) {
+                full.modules[moduleId] = {'modes': {}};
+            }
+            line.querySelectorAll('td[data-mode]').forEach((modeNode) => {
+                const modeId = modeNode.dataset.mode;
+                if(!full.modules[moduleId].modes.hasOwnProperty(modeId)) {
+                    full.modules[moduleId].modes[modeId] = {nb: 0, timeby: 0, groups: 0};
+                }
+                const inputNode = modeNode.querySelector('input.repart-input');
+                if(inputNode) {
+                    const inputName = inputNode.name;
+                    if(full.modules[moduleId].modes[modeId].hasOwnProperty(inputName)) {
+                        full.modules[moduleId].modes[modeId][inputName] = inputNode.value;
+                    }
+                }
+            });
+        });
+        const trainingId = OverviewServices.trainingId;
+        fetch(`/reparts/${trainingId}/default`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(full)
         }).then((r) => {
             r.json().then((res) => {
                 OverviewServices.updateStatus('Sauvegarde effectuée', OverviewServices.STATUS_TXT);
