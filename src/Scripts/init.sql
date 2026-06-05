@@ -1,4 +1,6 @@
 
+-- tables for new system
+
 create table `speakers_management` (
 `session_id` int unsigned not null,
 `semester_id` int unsigned not null,
@@ -108,6 +110,8 @@ foreign key (`mode_id`)
 references `speakmodes`(`id`) on delete restrict on update cascade
 );
 
+-- views
+
 create view `v_reparts_fillings`
 as select r.`session_id`,
 r.`teaching_module_id`,
@@ -122,4 +126,4 @@ left join `speakmodes` ss on ss.`id`=s.`mode_id`;
 
 -- @TODO ne pas bloquer la saisie sur les speaks selon la repart, mais afficher les eqtd pour ça
 
-
+-- altering for the new system

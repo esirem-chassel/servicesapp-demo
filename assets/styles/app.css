@@ -18,12 +18,8 @@ body {
     width: 100%;
 }
 
-#overviewPage tr:nth-of-type(2) {
-    background-color: gray;
-}
-
-#overviewPage tr:nth-of-type(3) {
-    background-color: darkgray;
+#overviewPage tr.mainModuleLine {
+    border-top: 1px ridge black;
 }
 
 #overviewPage input {

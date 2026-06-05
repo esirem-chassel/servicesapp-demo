@@ -49,10 +49,11 @@
                 </tfoot>
                 <tbody id="reparts" data-nbmodes="{{ modes|length }}">{% set i = 0 %}
                     {% for unit in modulesPerUnit %}
-                        {% for module in unit.modules %}{% set i = i + 1 %}
+                        {% for module in unit.modules %}
                             <tr data-module="{{ module.id }}"
                                 data-ue="{{ unit.id }}"
-                                class="mainModuleLine">
+                                class="mainModuleLine"
+                                style="background-color: {{ unit.bgcol }}; color: {{ unit.txcol }};">
                                 <th rowspan="4">{{ unit.name }}</th>
                                 <th rowspan="4">{{ module.name }}</th>
                                 <td>Séances :</td>
@@ -72,7 +73,8 @@
                                 </td>
                             </tr>
                             <tr data-module="{{ module.id }}"
-                                data-ue="{{ unit.id }}">
+                                data-ue="{{ unit.id }}"
+                                style="background-color: {{ unit.bgcol }}; color: {{ unit.txcol }};">
                                 <td>Min/Séance :</td>
                                 {% for mode in modes %}
                                 <td data-mode="{{ mode.id }}">
@@ -87,7 +89,8 @@
                                 {% endfor %}
                             </tr>
                             <tr data-module="{{ module.id }}"
-                                data-ue="{{ unit.id }}">
+                                data-ue="{{ unit.id }}"
+                                style="background-color: {{ unit.bgcol }}; color: {{ unit.txcol }};">
                                 <td>Groupes :</td>
                                 {% for mode in modes %}
                                 <td data-mode="{{ mode.id }}">
@@ -102,7 +105,8 @@
                                 {% endfor %}
                             </tr>
                             <tr data-module="{{ module.id }}"
-                                data-ue="{{ unit.id }}">
+                                data-ue="{{ unit.id }}"
+                                style="background-color: {{ unit.bgcol }}; color: {{ unit.txcol }};">
                                 <td>Total :</td>
                                 {% for mode in modes %}
                                 <td data-mode="{{ mode.id }}" class="computedModeTotal">
@@ -110,7 +114,7 @@
                                 </td>
                                 {% endfor %}
                             </tr>
-                        {% endfor %}
+                        {% set i = i + 1 %}{% endfor %}
                     {% endfor %}
                 </tbody>
             </table>

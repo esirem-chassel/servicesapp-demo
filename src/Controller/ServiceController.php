@@ -38,7 +38,7 @@ class ServiceController extends AbstractController {
                 . ' left join `semesters` s on s.`id`=tu.`semester_id` '
                 . ' left join `years` y on y.`id`=s.`year_id` '
                 . ' where t.`id`=:t and s.`id`=:s and stu.`session_id`=:i ', $qa);
-        $modules = $this->sql->kq('select t.*, u.`id` as unitId, u.`name` as unitName '
+        $modules = $this->sql->kq('select t.*, u.`id` as unitId, u.`name` as unitName, u.`background_color`, u.`text_color` '
                 . ' from `teaching_modules` t '
                 . ' left join `teaching_units` u on u.`id`=t.`teaching_unit_id` '
                 . ' left join `session_teaching_units` stu on stu.`teaching_unit_id`=u.`id` '
@@ -49,6 +49,8 @@ class ServiceController extends AbstractController {
                 $modulesPerUnit[$m['unitId']] = [
                     'id' => $m['unitId'],
                     'name' => $m['unitName'],
+                    'bgcol' => $m['background_color'],
+                    'txcol' => $m['text_color'],
                     'total' => 0,
                     'modules' => [],
                 ];
