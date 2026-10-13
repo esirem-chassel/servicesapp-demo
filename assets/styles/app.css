@@ -25,3 +25,11 @@ body {
 #overviewPage input {
     width: 4em;
 }
+
+#overviewPage tr.mainModuleLine.noDefault {
+    background-color: rgba(235, 175, 30, 0.7);
+}
+
+#overviewPage tr.mainModuleLine.isDefault {
+    background-color: rgba(70, 195, 235, 0.7);
+}

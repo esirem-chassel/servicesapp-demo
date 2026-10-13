@@ -52,7 +52,7 @@
                         {% for module in unit.modules %}
                             <tr data-module="{{ module.id }}"
                                 data-ue="{{ unit.id }}"
-                                class="mainModuleLine"
+                                class="mainModuleLine{% if module.isDefault is null %} noDefault{% elseif isDefault %} isDefault{% endif %}"
                                 style="background-color: {{ unit.bgcol }}; color: {{ unit.txcol }};">
                                 <th rowspan="4">{{ unit.name }}</th>
                                 <th rowspan="4">{{ module.name }}</th>

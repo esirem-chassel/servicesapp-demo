@@ -57,13 +57,16 @@ class ServiceController extends AbstractController {
             }
             $m['reparts'] = [];
             $m['total'] = 0;
+            $m['isDefault'] = null;
             $modulesPerUnit[$m['unitId']]['modules'][$m['id']] = $m;
         }
         $stmt = $this->sql->q('select dr.`teaching_module_id`, dr.`mode_id`, if(r.`last_modified` is null, "default", "actual") as `type`, '
                 . ' coalesce(r.`nb`, dr.`nb`) as `nb`, '
                 . ' coalesce(r.`timeby`, dr.`timeby`) as `timeby`, '
                 . ' coalesce(r.`groups`, dr.`groups`) as `groups`, '
-                . ' (coalesce(r.`nb`, dr.`nb`) * coalesce(r.`timeby`, dr.`timeby`) * coalesce(r.`groups`, dr.`groups`)) / 60 as `total` '
+                . ' (coalesce(r.`nb`, dr.`nb`) * coalesce(r.`timeby`, dr.`timeby`) * coalesce(r.`groups`, dr.`groups`)) / 60 as `total`, '
+                . ' (dr.`nb` * dr.`timeby` * dr.`groups`) / 60 as `defaultTotal`, '
+                . ' (r.`nb` * r.`timeby` * r.`groups`) / 60 as `actualTotal` '
                 . ' from `default_reparts` dr '
                 . ' left join `reparts` r on r.`teaching_module_id`=dr.`teaching_module_id` and r.`mode_id`=dr.`mode_id` and r.`session_id`=:s '
                 . ' left join `speakmodes` m on m.`id`=dr.`mode_id` '
@@ -74,6 +77,7 @@ class ServiceController extends AbstractController {
             $modeId = $l['mode_id'];
             $modulesPerUnit[$unitId]['modules'][$moduleId]['reparts'][$modeId] = $l;
             $modulesPerUnit[$unitId]['modules'][$moduleId]['total'] += $l['total'];
+            $modulesPerUnit[$unitId]['modules'][$moduleId]['isDefault'] = (null === $l['defaultTotal'])? null:(empty($l['actualTotal']) || ($l['actualTotal'] == $l['defaultTotal']));
             $modulesPerUnit[$unitId]['total'] += $l['total'];
         }
         return $this->render('service/overview.html.twig', [
